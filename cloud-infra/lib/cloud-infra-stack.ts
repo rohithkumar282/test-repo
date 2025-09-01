@@ -57,7 +57,7 @@ export class CloudInfraStack extends cdk.Stack {
         bucketArn: eventsBucket.bucketArn,
         roleArn: firehoseRole.roleArn,
         bufferingHints: { intervalInSeconds: 60, sizeInMBs: 5 },
-        compressionFormat: 'GZIP',
+        compressionFormat: 'ZIP',
         prefix: 'events/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/',
         errorOutputPrefix: 'errors/',
       }
