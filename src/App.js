@@ -4,13 +4,28 @@ const INGEST_URL = process.env.REACT_APP_INGEST_URL || "";
 
 export default function App() {
   const [payload, setPayload] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setPayload({
-      type: "page_view",
-      ts: Date.now(),
-      href: window.location.href,
-    });
+    if (!INGEST_URL) {
+      setError("No INGEST_URL provided");
+      return;
+    }
+
+    async function fetchPayload() {
+      try {
+        const res = await fetch(INGEST_URL);
+        if (!res.ok) {
+          throw new Error(`Request failed: ${res.status}`);
+        }
+        const data = await res.json(); 
+        setPayload(data);
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+
+    fetchPayload();
   }, []);
 
   return (
@@ -25,10 +40,14 @@ export default function App() {
       </section>
 
       <section className="p-4 rounded bg-gray-100">
-        <div className="font-semibold mb-2">Payload (display only)</div>
-        <pre className="text-sm">
-          {payload ? JSON.stringify(payload, null, 2) : "(building payload…)"}
-        </pre>
+        <div className="font-semibold mb-2">Payload (fetched)</div>
+        {error ? (
+          <div className="text-red-500">Error: {error}</div>
+        ) : (
+          <pre className="text-sm">
+            {payload ? JSON.stringify(payload, null, 2) : "(waiting for payload…)"}
+          </pre>
+        )}
       </section>
     </div>
   );
