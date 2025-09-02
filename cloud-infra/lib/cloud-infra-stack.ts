@@ -93,6 +93,32 @@ export class CloudInfraStack extends cdk.Stack {
     });
 
     const ingest = api.root.addResource('ingest');
+    ingest.addMethod(
+      'GET',
+      new apigw.MockIntegration({
+        passthroughBehavior: apigw.PassthroughBehavior.NEVER,
+        requestTemplates: { 'application/json': '{"statusCode":200}' },
+        integrationResponses: [{
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': `'${websiteOrigin}'`,
+            'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+            'method.response.header.Access-Control-Allow-Headers': "'content-type,x-api-key'",
+          },
+          responseTemplates: { 'application/json': '{"ok":true}' },
+        }],
+      }),
+      {
+        methodResponses: [{
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+          },
+        }],
+      }
+    );
     ingest.addMethod('POST', new apigw.LambdaIntegration(ingestFn, { proxy: true }));
 
     const ingestUrl = `${api.url}ingest`;
