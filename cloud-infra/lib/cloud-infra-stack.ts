@@ -32,6 +32,8 @@ export class CloudInfraStack extends cdk.Stack {
       description: 'S3 static website URL',
     });
 
+    const websiteOrigin = `http://${websiteBucket.bucketWebsiteDomainName}`;
+
     const eventsBucket = new s3.Bucket(this, 'EventsBucket', {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
@@ -70,7 +72,8 @@ export class CloudInfraStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
       memorySize: 128,
       environment: {
-        FIREHOSE_NAME: eventsDeliveryStream.ref
+        FIREHOSE_NAME: eventsDeliveryStream.ref,
+        WEBSITE_ORIGIN: websiteOrigin
       }
     });
 
@@ -82,9 +85,10 @@ export class CloudInfraStack extends cdk.Stack {
     const api = new apigw.RestApi(this, 'IngestApi', {
       cloudWatchRole: true,
       defaultCorsPreflightOptions: {
-        allowOrigins: apigw.Cors.ALL_ORIGINS,    
+        allowOrigins: [websiteOrigin],    
         allowMethods: ['POST', 'OPTIONS'],
         allowHeaders: ['content-type', 'x-api-key'],
+        maxAge: cdk.Duration.days(1),
       },
     });
 
@@ -163,10 +167,5 @@ export class CloudInfraStack extends cdk.Stack {
         { stageName: 'Deploy', actions: [deployAction] },
       ],
     });
-
-    new cdk.CfnOutput(this, 'StaticWebsiteUrl', {
-      value: websiteBucket.bucketWebsiteUrl,
-      description: 'Open this URL to view the site',
-    }); 
   }
 }
