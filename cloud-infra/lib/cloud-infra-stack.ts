@@ -78,7 +78,7 @@ export class CloudInfraStack extends cdk.Stack {
     });
 
     ingestFn.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['firehose:PutRecord'],
+      actions: ['firehose:PutRecord', 'firehose:PutRecordBatch'],
       resources: [`arn:aws:firehose:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:deliverystream/${eventsDeliveryStream.ref}`]
     }));
 
@@ -153,7 +153,7 @@ export class CloudInfraStack extends cdk.Stack {
           },
         },
         artifacts: {
-          'base-directory': 'build', // change if your app builds elsewhere
+          'base-directory': 'build', 
           files: ['**/*'],
         },
       }),

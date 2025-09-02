@@ -6,6 +6,7 @@ import base64
 
 firehose_client = boto3.client("firehose")
 STREAM = os.environ["FIREHOSE_NAME"]
+
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": os.environ.get("WEBSITE_ORIGIN", "*"),
     "Access-Control-Allow-Headers": "content-type, x-api-key",
@@ -17,24 +18,31 @@ def _ndjson(obj):
 
 def handler(event, context):
     try:
-        if event.get("httpMethod") == "OPTIONS":
-            return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
-        body = event.get("body")
-        if event.get("isBase64Encoded"):
-            body = base64.b64decode(body or b"").decode("utf-8")
-        data = json.loads(body or "{}")
+        print(event)
+        body = event["body"]
+        if isinstance(body, str):
+            data = json.loads(body)
+        else:
+            data = body 
 
         rec = {
-            "type": str(data.get("type", "unknown"))[:64],
-            "ts": int(data.get("ts") or 0) or int(time.time() * 1000),
-            "href": data.get("href"),
-            "props": data,
+            "device_id": data["device_id"],
+            "ts": int(data["ts"] or 0) or int(time.time() * 1000),
+            "temp_c": data["temp_c"],
+            "humidity": data["humidity"],
+        }
+        print('data for firehose', rec)
+        firehose_client.put_record(DeliveryStreamName=STREAM,Record={"Data": _ndjson(rec)})
+        print('success firehose')
+
+        return {
+            "statusCode": 200,
+            "headers": CORS_HEADERS,
+            "body": json.dumps(rec),
         }
 
-        firehose_client.put_record(DeliveryStreamName=STREAM, Record={"Data": _ndjson(rec)})
-        return {"statusCode": 204, "headers": CORS_HEADERS, "body": ""}
-
     except Exception as e:
+        print(e)
         return {
             "statusCode": 500,
             "headers": CORS_HEADERS,
